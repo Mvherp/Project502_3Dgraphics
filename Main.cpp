@@ -15,6 +15,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#include<map>
+
 #include "camera.h"
 #include "shader.h"
 #include "object.h"
@@ -38,6 +40,9 @@ float screenVertices[] = {
 GLuint compileShader(std::string shaderCode, GLenum shaderType);
 GLuint compileProgram(GLuint vertexShader, GLuint fragmentShader);
 void processInput(GLFWwindow* window);
+
+void loadCubemapFace(const char* file, const GLenum& targetCube);
+
 
 
 #ifndef NDEBUG
@@ -144,6 +149,7 @@ int main(int argc, char* argv[])
 
 
 	Shader shader(PATH_TO_SHADERS"/advanceLight.vert", PATH_TO_SHADERS"/advanceLight.frag");
+	Shader skyBoxShader(PATH_TO_SHADERS"/skyBox.vert", PATH_TO_SHADERS"/skyBox.frag");
 	Shader framebufferProgram(PATH_TO_SHADERS"/post.vert", PATH_TO_SHADERS"/postNoEffects.frag");
 
 	//1. Load the model for 3 types of spheres
@@ -151,6 +157,9 @@ int main(int argc, char* argv[])
 	char path1[] = PATH_TO_OBJECTS"/sphere_extremely_coarse.obj";
 	char path2[] = PATH_TO_OBJECTS"/sphere_coarse.obj";
 	char path3[] = PATH_TO_OBJECTS"/sphere_smooth.obj";
+	char pathCube[] = PATH_TO_OBJECTS "/cube.obj";
+	Object skyBox(pathCube);
+	skyBox.makeObject(skyBoxShader);
 
 	Object sphere1(path1);
 	sphere1.makeObject(shader);
@@ -285,9 +294,48 @@ int main(int argc, char* argv[])
 	shader.setFloat("light.quadratic", 0.07);
 	// SPECIAL advance lighting
 
+	//cubeMap (skyBox)
+	GLuint cubeMapTexture;
+	glGenTextures(1, &cubeMapTexture);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapTexture);
+
+	// texture parameters
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	stbi_set_flip_vertically_on_load(true);
+
+	std::string pathToCubeMap = PATH_TO_TEXTURE "/cubemaps/yokohama3/";
+
+	std::map<std::string, GLenum> facesToLoad = {
+		{pathToCubeMap + "posx.jpg",GL_TEXTURE_CUBE_MAP_POSITIVE_X},
+		{pathToCubeMap + "posy.jpg",GL_TEXTURE_CUBE_MAP_POSITIVE_Y},
+		{pathToCubeMap + "posz.jpg",GL_TEXTURE_CUBE_MAP_POSITIVE_Z},
+		{pathToCubeMap + "negx.jpg",GL_TEXTURE_CUBE_MAP_NEGATIVE_X},
+		{pathToCubeMap + "negy.jpg",GL_TEXTURE_CUBE_MAP_NEGATIVE_Y},
+		{pathToCubeMap + "negz.jpg",GL_TEXTURE_CUBE_MAP_NEGATIVE_Z},
+	};
+	//load the six faces
+	for (std::pair<std::string, GLenum> pair : facesToLoad) {
+		loadCubemapFace(pair.first.c_str(), pair.second);
+	}
+
 	//6. get the uniform location for the texture
 	auto u_texture = glGetUniformLocation(shader.ID, "T");
 
+	/*
+	Refraction indices:
+	Air:      1.0
+	Water:    1.33
+	Ice:      1.309
+	Glass:    1.52
+	Diamond:  2.42
+*/
+	shader.setFloat("refractionIndice", 1.0);
 
 	//Rendering
 	glfwSwapInterval(1);
@@ -326,6 +374,8 @@ int main(int argc, char* argv[])
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture);
 
+		glDepthFunc(GL_LEQUAL);
+
 		//don't forget to draw your objects
 		sphere1.draw();
 
@@ -336,6 +386,22 @@ int main(int argc, char* argv[])
 		shader.setMatrix4("M", sphere3.model);
 		shader.setMatrix4("itM", glm::transpose(glm::inverse(sphere3.model)));
 		sphere3.draw();
+
+		//sphere1.model = glm::translate(sphere1.model, glm::vec3(std::sin(now) * 0.05, 0.05, std::cos(now) * 0.05));
+		//sphere2.model = glm::translate(sphere1.model, glm::vec3(std::sin(now) * 0.05, 0.05, std::cos(now) * 0.05));
+		//sphere3.model = glm::translate(sphere1.model, glm::vec3(std::sin(now) * 0.05, 0.05, std::cos(now) * 0.05));
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapTexture);
+		//skyBoxShader.setInteger("cubemapTexture", 0); // no use ???
+
+		skyBoxShader.use();
+		skyBoxShader.setMatrix4("V", view);
+		skyBoxShader.setMatrix4("P", perspective);
+		//skyBoxShader.setInteger("cubemapTexture", 0); // no use ???
+
+		skyBox.draw();
+		glDepthFunc(GL_LESS);
 
 		// PostProcessing
 		glBindFramebuffer(GL_FRAMEBUFFER, 0); // rebind normal screen buffer to show result after operations
@@ -355,6 +421,24 @@ int main(int argc, char* argv[])
 	glfwTerminate();
 
 	return 0;
+}
+
+void loadCubemapFace(const char* path, const GLenum& targetFace)
+{
+	int imWidth, imHeight, imNrChannels;
+	unsigned char* data = stbi_load(path, &imWidth, &imHeight, &imNrChannels, 0);
+	if (data)
+	{
+
+		glTexImage2D(targetFace, 0, GL_RGB, imWidth, imHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		//glGenerateMipmap(targetFace);
+	}
+	else {
+		std::cout << "Failed to Load texture" << std::endl;
+		const char* reason = stbi_failure_reason();
+		std::cout << reason << std::endl;
+	}
+	stbi_image_free(data);
 }
 
 

@@ -22,8 +22,8 @@
 #include "object.h"
 
 
-const int width = 500;
-const int height = 500;
+const int WIDTH = 500;
+const int HEIGHT = 500;
 
 float screenVertices[] = {
 	// Coords		// texCoords
@@ -117,7 +117,7 @@ int main(int argc, char* argv[])
 
 
 	//Create the window
-	GLFWwindow* window = glfwCreateWindow(width, height, "Exercise 03", nullptr, nullptr);
+	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Project 502", nullptr, nullptr);
 	if (window == NULL)
 	{
 		glfwTerminate();
@@ -150,7 +150,7 @@ int main(int argc, char* argv[])
 
 	Shader shader(PATH_TO_SHADERS"/advanceLight.vert", PATH_TO_SHADERS"/advanceLight.frag");
 	Shader skyBoxShader(PATH_TO_SHADERS"/skyBox.vert", PATH_TO_SHADERS"/skyBox.frag");
-	Shader framebufferProgram(PATH_TO_SHADERS"/post.vert", PATH_TO_SHADERS"/postNoEffects.frag");
+	Shader framebufferProgram(PATH_TO_SHADERS"/post.vert", PATH_TO_SHADERS"/postKuwaharaCircle.frag");
 
 	//1. Load the model for 3 types of spheres
 
@@ -254,7 +254,7 @@ int main(int argc, char* argv[])
 	unsigned int framebufferTexture;
 	glGenTextures(1, &framebufferTexture);
 	glBindTexture(GL_TEXTURE_2D, framebufferTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIDTH, HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -264,7 +264,7 @@ int main(int argc, char* argv[])
 	unsigned int RBO;
 	glGenRenderbuffers(1, &RBO);
 	glBindRenderbuffer(GL_RENDERBUFFER, RBO);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WIDTH, HEIGHT);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
 
 	auto fbostatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -307,7 +307,7 @@ int main(int argc, char* argv[])
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	stbi_set_flip_vertically_on_load(true);
+	stbi_set_flip_vertically_on_load(false);
 
 	std::string pathToCubeMap = PATH_TO_TEXTURE "/cubemaps/yokohama3/";
 
@@ -409,6 +409,8 @@ int main(int argc, char* argv[])
 		glBindVertexArray(rectVAO);
 		glDisable(GL_DEPTH_TEST);
 		glBindTexture(GL_TEXTURE_2D, framebufferTexture);
+
+		framebufferProgram.setVector2f("screenSize", WIDTH, HEIGHT);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 

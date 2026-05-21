@@ -3,12 +3,10 @@
 		in vec2 TexCoords;
 
 		uniform sampler2D screenTexture;
-
-		const float offset_x = 1.0f / 500.0f;
-		const float offset_y = 1.0f / 500.0f;
+		uniform vec2 screenSize;
 
 		const int SECTOR_COUNT = 4;
-		vec2 offsets[4] = vec2[]( vec2(-offset_x, -offset_y), vec2(offset_x, -offset_y), vec2(offset_x, offset_y), vec2(-offset_x, offset_y) );
+		vec2 offsets[4] = vec2[]( vec2(-1, -1) / screenSize, vec2(1, -1) / screenSize, vec2(1, 1) / screenSize, vec2(-1, 1) / screenSize);
 		const int kernelSize = 6;
 
 		vec3 computeKernels(){

@@ -67,6 +67,9 @@ public:
     void setFloat(const GLchar* name, GLfloat value) {
         glUniform1f(glGetUniformLocation(ID, name), value);
     }
+    void setVector2f(const GLchar* name, GLfloat x, GLfloat y) {
+        glUniform2f(glGetUniformLocation(ID, name), x, y);
+    }
     void setVector3f(const GLchar* name, GLfloat x, GLfloat y, GLfloat z) {
         glUniform3f(glGetUniformLocation(ID, name), x, y, z);
     }

@@ -37,7 +37,7 @@ float screenVertices[] = {
 
 GLuint compileShader(std::string shaderCode, GLenum shaderType);
 GLuint compileProgram(GLuint vertexShader, GLuint fragmentShader);
-void processInput(GLFWwindow* window);
+void processInput(GLFWwindow* window, double delta);
 
 
 #ifndef NDEBUG
@@ -208,6 +208,7 @@ int main(int argc, char* argv[])
 
 	double prev = 0;
 	int deltaFrame = 0;
+	double delta;
 	//fps function
 	auto fps = [&](double now) {
 		double deltaTime = now - prev;
@@ -215,6 +216,7 @@ int main(int argc, char* argv[])
 		if (deltaTime > 0.5) {
 			prev = now;
 			const double fpsCount = (double)deltaFrame / deltaTime;
+			delta = 60.0 / fpsCount;
 			deltaFrame = 0;
 			std::cout << "\r FPS: " << fpsCount;
 		}
@@ -268,9 +270,9 @@ int main(int argc, char* argv[])
 
 
 	// SPECIAL advance lighting
-	float ambient = 0.1f;
-	float diffuse = 0.5f;
-	float specular = 0.8f;
+	float ambient = 0.4f;
+	float diffuse = 0.6f;
+	float specular = 0.9f;
 
 	glm::vec3 materialColour = glm::vec3(0.5f, 0.6f, 0.8f);
 
@@ -291,12 +293,13 @@ int main(int argc, char* argv[])
 
 	//Rendering
 	glfwSwapInterval(1);
+	double now = glfwGetTime();
 
 	while (!glfwWindowShouldClose(window)) {
-		processInput(window);
+		processInput(window, delta);
 		view = camera.GetViewMatrix();
 		glfwPollEvents();
-		double now = glfwGetTime();
+		now = glfwGetTime();
 
 		// binding frame  buffer for postProcessing (stores the screen image in the postbuffer instead of the normal one)
 
@@ -358,30 +361,30 @@ int main(int argc, char* argv[])
 }
 
 
-void processInput(GLFWwindow* window) {
+void processInput(GLFWwindow* window, double delta) {
 	// Use the cameras class to change the parameters of the camera
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		camera.ProcessKeyboardMovement(LEFT, 0.1);
+		camera.ProcessKeyboardMovement(LEFT, 0.1 * delta);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		camera.ProcessKeyboardMovement(RIGHT, 0.1);
+		camera.ProcessKeyboardMovement(RIGHT, 0.1 * delta);
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		camera.ProcessKeyboardMovement(FORWARD, 0.1);
+		camera.ProcessKeyboardMovement(FORWARD, 0.1 * delta);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		camera.ProcessKeyboardMovement(BACKWARD, 0.1);
+		camera.ProcessKeyboardMovement(BACKWARD, 0.1 * delta);
 
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-		camera.ProcessKeyboardRotation(1, 0.0, 1);
+		camera.ProcessKeyboardRotation(1, 0.0, 1 * delta);
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-		camera.ProcessKeyboardRotation(-1, 0.0, 1);
+		camera.ProcessKeyboardRotation(-1, 0.0, 1 * delta);
 
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-		camera.ProcessKeyboardRotation(0.0, 1.0, 1);
+		camera.ProcessKeyboardRotation(0.0, 1.0, 1 * delta);
 	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-		camera.ProcessKeyboardRotation(0.0, -1.0, 1);
+		camera.ProcessKeyboardRotation(0.0, -1.0, 1 * delta);
 
 
 }

@@ -9,7 +9,7 @@ project ("InfoF502Project")
 find_package(OpenGL REQUIRED)
 
 #for glad library
-add_library( glad STATIC 3rdParty/glad/src/glad.c)
+add_library( glad STATIC 3rdParty/glad/src/glad.c "texture.h")
 set(GLAD_INCLUDE "3rdParty/glad/include")
 target_include_directories(glad PUBLIC ${GLAD_INCLUDE})
 
@@ -42,7 +42,7 @@ add_compile_definitions(PATH_TO_OBJECTS="${CMAKE_CURRENT_SOURCE_DIR}/objects")
 add_compile_definitions(PATH_TO_TEXTURE="${CMAKE_CURRENT_SOURCE_DIR}/textures")
 add_compile_definitions(PATH_TO_SHADERS="${CMAKE_CURRENT_SOURCE_DIR}/shaders")
 
-add_executable(${PROJECT_NAME}_exe ${Main})
+add_executable(${PROJECT_NAME}_exe ${Main} "texture.h")
 target_link_libraries(${PROJECT_NAME}_exe PUBLIC OpenGL::GL glfw glad)
 
 

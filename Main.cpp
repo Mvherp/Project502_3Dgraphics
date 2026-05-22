@@ -20,6 +20,7 @@
 #include "camera.h"
 #include "shader.h"
 #include "object.h"
+#include "texture.h"
 
 
 const int WIDTH = 500;
@@ -150,12 +151,12 @@ int main(int argc, char* argv[])
 
 	Shader shader(PATH_TO_SHADERS"/advanceLight.vert", PATH_TO_SHADERS"/advanceLight.frag");
 	Shader skyBoxShader(PATH_TO_SHADERS"/skyBox.vert", PATH_TO_SHADERS"/skyBox.frag");
-	Shader framebufferProgram(PATH_TO_SHADERS"/post.vert", PATH_TO_SHADERS"/postKuwaharaCircle.frag");
+	Shader framebufferProgram(PATH_TO_SHADERS"/post.vert", PATH_TO_SHADERS"/postNoEffects.frag");
 
 	//1. Load the model for 3 types of spheres
 
 	char path1[] = PATH_TO_OBJECTS"/sphere_extremely_coarse.obj";
-	char path2[] = PATH_TO_OBJECTS"/sphere_coarse.obj";
+	char path2[] = PATH_TO_OBJECTS"/compact_classic.obj";
 	char path3[] = PATH_TO_OBJECTS"/sphere_smooth.obj";
 	char pathCube[] = PATH_TO_OBJECTS "/cube.obj";
 	Object skyBox(pathCube);
@@ -210,6 +211,45 @@ int main(int argc, char* argv[])
 		std::cout << reason << std::endl;
 	}
 	stbi_image_free(data);
+
+
+	Texture carT("/carTextures/ruby_red.png");
+
+	// Load necessary textures
+	GLuint carTexture;
+	glGenTextures(1, &carTexture);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, carTexture);
+
+
+	//3. Define the parameters for the texture
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	//4. Load the image
+	//Carefull depending on where your executable is, the relative path might be different from what you think it is
+	//Try to use an absolute path
+	//image usually have thei 0.0 at the top of the vertical axis and not the bottom like opengl expects
+
+
+	data = stbi_load(PATH_TO_TEXTURE"/carTextures/ruby_red.png", &width, &height, &nrchannels, STBI_rgb);
+
+	if (data)
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else {
+		std::cout << "failed to load texture" << std::endl;
+		const char* reason = stbi_failure_reason();
+		std::cout << reason << std::endl;
+	}
+	stbi_image_free(data);
+
+
 
 
 	//2. Choose a position for the light
@@ -311,7 +351,7 @@ int main(int argc, char* argv[])
 
 	stbi_set_flip_vertically_on_load(false);
 
-	std::string pathToCubeMap = PATH_TO_TEXTURE "/cubemaps/yokohama3/";
+	std::string pathToCubeMap = PATH_TO_TEXTURE "/cubemaps/yokohama2/";
 
 	std::map<std::string, GLenum> facesToLoad = {
 		{pathToCubeMap + "posx.jpg",GL_TEXTURE_CUBE_MAP_POSITIVE_X},
@@ -342,7 +382,7 @@ int main(int argc, char* argv[])
 	//Rendering
 	glfwSwapInterval(1);
 	double now = glfwGetTime();
-
+	
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window, delta);
 		view = camera.GetViewMatrix();
@@ -371,11 +411,11 @@ int main(int argc, char* argv[])
 		shader.setVector3f("light.light_pos", light_pos);
 
 		//6. Send the texture
-		glUniform1i(u_texture, 0); //use ID of correct texture
+		shader.setInteger("T", 0); //
 
 		//7. activate the texture
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture);
+		glBindTexture(GL_TEXTURE_2D, carTexture);
 
 		glDepthFunc(GL_LEQUAL);
 

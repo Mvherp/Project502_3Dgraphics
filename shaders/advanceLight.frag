@@ -41,7 +41,7 @@
 		float specular = specularCalculation( N, L, V); 
 		float diffuse = light.diffuse_strength * max(dot(N,L),0.0);
 		float distance = length(light.light_pos - v_frag_coord);
-		float attenuation = 1 / (light.constant + light.linear * distance + light.quadratic * distance * distance);
+		float attenuation = shininess / (light.constant + light.linear * distance + light.quadratic * distance * distance);
 		float light = light.ambient_strength + attenuation * (diffuse + specular); 
 		FragColor = vec4(vec3(texture(T, texCoords)) * vec3(light), 1.0); 
 		} ;

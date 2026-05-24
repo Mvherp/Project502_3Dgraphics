@@ -7,6 +7,8 @@
 #include <sstream>
 #include <vector>
 
+#include "shader.h"
+
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -36,6 +38,8 @@ public:
 	GLuint VBO, VAO;
 
 	glm::mat4 model = glm::mat4(1.0);
+
+	Object() = default;
 
 
 	Object(const char* path) {
@@ -133,6 +137,14 @@ public:
 		numVertices = vertices.size();
 	}
 
+	glm::vec3 getLocation() {
+		return glm::vec3(model[3][0], model[3][1], model[3][2]);
+	}
+
+	glm::vec3 getRotation() {
+		return glm::vec3(model[1][0], model[1][1], model[1][2]);
+	}
+
 
 
 	void makeObject(Shader shader, bool texture = true) {
@@ -140,7 +152,6 @@ public:
 not perfect solution, you can improve it if you need/want
 		* What happens when a shader doesn't have a position, tex_coord or normal attribute ?
 		*/
-
 		float* data = new float[8 * numVertices];
 		for (int i = 0; i < numVertices; i++) {
 			Vertex v = vertices.at(i);
@@ -187,7 +198,11 @@ not perfect solution, you can improve it if you need/want
 
 	}
 
-	void draw() {
+	void draw(Shader shader) {
+
+		shader.use();
+		shader.setMatrix4("M", model);
+		shader.setMatrix4("itM", glm::transpose(glm::inverse(model)));
 
 		glBindVertexArray(this->VAO);
 		glDrawArrays(GL_TRIANGLES, 0, numVertices);

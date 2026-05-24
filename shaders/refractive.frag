@@ -7,6 +7,9 @@
 
 		uniform vec3 u_view_pos; 
 
+		vec3 bubble_color = vec3(0.4,0.9,1.0);
+
+
 		uniform samplerCube cubemapSampler; 
 		uniform float refractionIndice;
 
@@ -15,5 +18,5 @@
 		vec3 N = normalize(v_normal);
 		vec3 V = normalize(u_view_pos - v_frag_coord); 
 		vec3 R = refract(-V,N,ratio); 
-		FragColor = texture(cubemapSampler,R); 
+		FragColor = vec4(texture(cubemapSampler,R).rgb * 0.4 + bubble_color  * 0.6, 1.0); 
 		} ;

@@ -1,5 +1,5 @@
-#ifndef OBJECT_H
-#define OBJECT_H
+#ifndef TEXTURE_H
+#define TEXTURE_H
 
 #include<iostream>
 
@@ -8,6 +8,8 @@
 
 #include <glm/glm.hpp>
 #include<glm/gtc/matrix_transform.hpp>
+
+#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 
@@ -18,10 +20,9 @@ public:
 	Texture(const char* path, bool flip = true) {
 
 		// Load necessary textures
-		GLuint texture;
-		glGenTextures(1, &texture);
+		glGenTextures(1, &ID);
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture);
+		glBindTexture(GL_TEXTURE_2D, ID);
 
 
 		//3. Define the parameters for the texture
@@ -38,7 +39,7 @@ public:
 
 		stbi_set_flip_vertically_on_load(true);
 		int width, height, nrchannels;
-		unsigned char* data = stbi_load(PATH_TO_TEXTURE + path, &width, &height, &nrchannels, STBI_rgb);
+		unsigned char* data = stbi_load(path, &width, &height, &nrchannels, STBI_rgb);
 
 		if (data)
 		{

@@ -23,7 +23,10 @@
 const int WIDTH = 1680;
 const int HEIGHT = 1240;
 bool CAMLOCK = false;
-bool POSTPAINT = false;
+bool NOEFFECT = true;
+bool POSTSQUARE = false;
+bool POSTCIRCLE = false;
+bool POSTCIRCLEWEIGHTED = false;
 
 float screenVertices[] = {
 	// Coords		// texCoords
@@ -169,8 +172,11 @@ int main(int argc, char* argv[])
 	Shader reflective(PATH_TO_SHADERS"/reflective.vert", PATH_TO_SHADERS"/reflective.frag");
 	Shader refractive(PATH_TO_SHADERS"/refractive.vert", PATH_TO_SHADERS"/refractive.frag");
 
-	Shader framebufferProgram(PATH_TO_SHADERS"/post.vert", PATH_TO_SHADERS"/postNoEffects.frag");
-	Shader postPaint(PATH_TO_SHADERS"/post.vert", PATH_TO_SHADERS"/postKuwaharaCircle.frag");
+	Shader noEffect(PATH_TO_SHADERS"/post.vert", PATH_TO_SHADERS"/postNoEffects.frag");
+	Shader postSquare(PATH_TO_SHADERS"/post.vert", PATH_TO_SHADERS"/postKuwaharaSquare.frag");
+	Shader postCircle(PATH_TO_SHADERS"/post.vert", PATH_TO_SHADERS"/postKuwaharaCircle.frag");
+	Shader postCircleWeighted(PATH_TO_SHADERS"/post.vert", PATH_TO_SHADERS"/postKuwaharaCircleWeighted.frag");
+
 
 
 	//1. Load the model for 3 types of spheres
@@ -289,7 +295,7 @@ int main(int argc, char* argv[])
 		if (deltaTime > 0.5) {
 			prev = now;
 			const double fpsCount = (double)deltaFrame / deltaTime;
-			delta = 30.0 / fpsCount;
+			delta = 15.0 / fpsCount;
 			deltaFrame = 0;
 			std::cout << "\r FPS: " << fpsCount;
 		}
@@ -338,11 +344,17 @@ int main(int argc, char* argv[])
 		std::cout << "framebuffer error" << fbostatus << std::endl;
 
 	// create postprocessing uniforms
-	framebufferProgram.use();
-	framebufferProgram.setInteger("screenTexture", 0);
+	noEffect.use();
+	noEffect.setInteger("screenTexture", 0);
 
-	postPaint.use();
-	postPaint.setInteger("screenTexture", 0);
+	postSquare.use();
+	postSquare.setInteger("screenTexture", 0);
+
+	postCircle.use();
+	postCircle.setInteger("screenTexture", 0);
+
+	postCircleWeighted.use();
+	postCircleWeighted.setInteger("screenTexture", 0);
 
 
 	// SPECIAL advance lighting
@@ -555,22 +567,35 @@ int main(int argc, char* argv[])
 
 		// PostProcessing
 		glBindFramebuffer(GL_FRAMEBUFFER, 0); // rebind normal screen buffer to show result after operations
-		if (POSTPAINT) {
-			postPaint.use();
+		if (NOEFFECT) {
+			noEffect.use();
 		}
-		else {
-			framebufferProgram.use();
+		else if (POSTSQUARE) {
+			postSquare.use();
+		}
+		else if (POSTCIRCLE) {
+			postCircle.use();
+		}
+		else if (POSTCIRCLEWEIGHTED) {
+			postCircleWeighted.use();
 		}
 		glBindVertexArray(rectVAO);
 		glDisable(GL_DEPTH_TEST);
 		glBindTexture(GL_TEXTURE_2D, framebufferTexture);
 
-		if (POSTPAINT) {
-			postPaint.setVector2f("screenSize", WIDTH, HEIGHT);
+		if (NOEFFECT) {
+			noEffect.setVector2f("screenSize", WIDTH, HEIGHT);
 		}
-		else {
-			framebufferProgram.setVector2f("screenSize", WIDTH, HEIGHT);
+		else if (POSTSQUARE) {
+			postSquare.setVector2f("screenSize", WIDTH, HEIGHT);
 		}
+		else if (POSTCIRCLE) {
+			postCircle.setVector2f("screenSize", WIDTH, HEIGHT);
+		}
+		else if (POSTCIRCLEWEIGHTED) {
+			postCircleWeighted.setVector2f("screenSize", WIDTH, HEIGHT);
+		}
+
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 
@@ -603,30 +628,44 @@ void loadCubemapFace(const char* path, const GLenum& targetFace)
 	stbi_image_free(data);
 }
 
-bool T_LOCK = false;
-bool Y_LOCK = false;
-
-
+bool LOCK_T = false;
 
 void processInput(GLFWwindow* window, double delta) {
 
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 
-	if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS && !T_LOCK) {
-		T_LOCK = true;
+	if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS && !LOCK_T) {
+		LOCK_T = true;
 		CAMLOCK = !CAMLOCK;
 	}
-	if (glfwGetKey(window, GLFW_KEY_T) == GLFW_RELEASE && T_LOCK) {
-		T_LOCK = false;
+	if (glfwGetKey(window, GLFW_KEY_T) == GLFW_RELEASE && LOCK_T) {
+		LOCK_T = false;
 	}
 
-	if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS && !Y_LOCK) {
-		Y_LOCK = true;
-		POSTPAINT = !POSTPAINT;
+	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS && !NOEFFECT) {
+		NOEFFECT = true;
+		POSTSQUARE = false;
+		POSTCIRCLE = false;
+		POSTCIRCLEWEIGHTED = false;
 	}
-	if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_RELEASE && Y_LOCK) {
-		Y_LOCK = false;
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS && !POSTSQUARE) {
+		NOEFFECT = false;
+		POSTSQUARE = true;
+		POSTCIRCLE = false;
+		POSTCIRCLEWEIGHTED = false;
+	}
+	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS && !POSTCIRCLE) {
+		NOEFFECT = false;
+		POSTSQUARE = false;
+		POSTCIRCLE = true;
+		POSTCIRCLEWEIGHTED = false;
+	}
+	if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS && !POSTCIRCLEWEIGHTED) {
+		NOEFFECT = false;
+		POSTSQUARE = false;
+		POSTCIRCLE = false;
+		POSTCIRCLEWEIGHTED = true;
 	}
 
 	if (CAMLOCK) {
@@ -634,13 +673,13 @@ void processInput(GLFWwindow* window, double delta) {
 		float angle = 0.0;
 		float forward = 0;
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-			angle += 2 * delta;
+			angle += 4 * delta;
 		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-			angle -= 2 * delta;
+			angle -= 4 * delta;
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-			forward += 3 * delta;
+			forward += 6 * delta;
 		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-			forward -= 3 * delta;
+			forward -= 6 * delta;
 		
 		player.model = glm::rotate(player.model, glm::radians(angle), glm::vec3(0.0, 1.0, 0.0));
 		player.model = glm::translate(player.model, glm::vec3(0.0, 0.0, forward * delta));
